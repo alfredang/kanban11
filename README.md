@@ -4,6 +4,8 @@
 
 A single-file Kanban board demo for an IT PMO, built with vanilla HTML/CSS/JS. All markup, styles and script live in `index.html`.
 
+![IT PMO Kanban board - live deployed site](docs/screenshot.png)
+
 ## Placeholder content
 Tasks are seed/demo data (IDs `UOB-ITPM-0001`–`0008`; due dates are computed relative to today). The notification email is the placeholder `YOUR_EMAIL@example.com`.
 
