@@ -1,5 +1,7 @@
 # kanban11 — IT PMO Project Kanban (Demo)
 
+**Live demo:** https://alfredang.github.io/kanban11/
+
 A single-file Kanban board demo for an IT PMO, built with vanilla HTML/CSS/JS. All markup, styles and script live in `index.html`.
 
 ## Placeholder content
