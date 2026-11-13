@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!--
+  HARDENING: strict CSP. No inline script/style is allowed (all code lives in app.js / styles.css),
+  only the FormSubmit host may be contacted, forms can never navigate away, <base> and plugins are blocked.
+  NOTE: GitHub Pages cannot send HTTP headers, so frame-ancestors / HSTS cannot be set here;
+  app.js includes a frame-busting guard instead.
+-->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src data:; connect-src https://formsubmit.co; form-action 'none'; base-uri 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; manifest-src 'none'">
+<meta name="referrer" content="no-referrer">
+<meta name="color-scheme" content="light">
+<meta name="description" content="IT PMO project Kanban demo, v2: cartoon look with Board, Visual and Timeline views.">
+<title>IT PMO – Project Kanban v2 (Demo)</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23ffd23f'/%3E%3Cpath d='M8 17l5 5 11-12' fill='none' stroke='%231d1b3a' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<noscript><p class="noscript">This demo needs JavaScript to run.</p></noscript>
+
+<div id="app">
+  <!-- ============================ HEADER ============================ -->
+  <header class="app-header">
+    <svg class="mascot" viewBox="0 0 80 80" role="img" aria-label="Friendly clipboard mascot">
+      <g class="mascot-body">
+        <rect x="14" y="12" width="52" height="60" rx="12" class="m-board"/>
+        <rect x="28" y="6" width="24" height="14" rx="6" class="m-clip"/>
+        <g class="m-eyes">
+          <ellipse cx="32" cy="38" rx="5" ry="6" class="m-eye"/>
+          <ellipse cx="48" cy="38" rx="5" ry="6" class="m-eye"/>
+          <circle cx="33.5" cy="36" r="1.8" class="m-shine"/>
+          <circle cx="49.5" cy="36" r="1.8" class="m-shine"/>
+        </g>
+        <path d="M30 52 Q40 62 50 52" class="m-smile"/>
+        <circle cx="24" cy="48" r="4" class="m-cheek"/>
+        <circle cx="56" cy="48" r="4" class="m-cheek"/>
+      </g>
+    </svg>
+    <h1 class="wordmark">IT PMO <span>Project Kanban · v2</span></h1>
+    <ul class="summary" id="summary" aria-label="Board summary"></ul>
+    <button type="button" class="btn btn-primary" id="open-add">+ Add Task</button>
+    <p class="reset-note">Demo data only — everything lives in memory, so a page refresh resets the board to the seeded tasks.</p>
+  </header>
+
+  <!-- ============================ TABS ============================ -->
+  <nav class="tabs" role="tablist" aria-label="Views">
+    <button type="button" class="tab" role="tab" id="tab-board" aria-controls="panel-board" aria-selected="true" data-tab="board"><span aria-hidden="true">▦</span> Board</button>
+    <button type="button" class="tab" role="tab" id="tab-visual" aria-controls="panel-visual" aria-selected="false" tabindex="-1" data-tab="visual"><span aria-hidden="true">◔</span> Visual</button>
+    <button type="button" class="tab" role="tab" id="tab-timeline" aria-controls="panel-timeline" aria-selected="false" tabindex="-1" data-tab="timeline"><span aria-hidden="true">↦</span> Timeline</button>
+  </nav>
+
+  <!-- ============================ FILTER BAR ============================ -->
+  <section class="filter-bar" aria-label="Filter tasks (applies to all views)">
+    <div class="field">
+      <label for="f-project">Project</label>
+      <select id="f-project"></select>
+    </div>
+    <div class="field">
+      <label for="f-assignee">Assignee contains</label>
+      <input type="text" id="f-assignee" placeholder="e.g. Priya" autocomplete="off" maxlength="50">
+    </div>
+    <div class="field">
+      <label for="f-priority">Priority</label>
+      <select id="f-priority"></select>
+    </div>
+    <button type="button" class="btn btn-secondary" id="f-clear">Clear filters</button>
+  </section>
+
+  <!-- ============================ VIEWS ============================ -->
+  <main id="main">
+    <div role="tabpanel" id="panel-board" aria-labelledby="tab-board" tabindex="0" class="panel">
+      <div class="board" id="board" aria-label="Kanban board"></div>
+    </div>
+    <div role="tabpanel" id="panel-visual" aria-labelledby="tab-visual" tabindex="0" class="panel" hidden>
+      <div class="visual" id="visual"></div>
+    </div>
+    <div role="tabpanel" id="panel-timeline" aria-labelledby="tab-timeline" tabindex="0" class="panel" hidden>
+      <div class="timeline-wrap" id="timeline"></div>
+    </div>
+  </main>
+</div>
+
+<!-- ============================ ADD TASK MODAL ============================ -->
+<div class="modal-backdrop" id="modal" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal-head">
+      <h2 id="modal-title">Add Task</h2>
+      <button type="button" class="icon-btn" id="close-add" aria-label="Close add task form">&times;</button>
+    </div>
+    <form id="task-form" novalidate autocomplete="off">
+      <div class="form-grid">
+        <div class="form-field full" data-field="title">
+          <label for="t-title">Task Title <span class="req" aria-hidden="true">*</span></label>
+          <input type="text" id="t-title" name="title" maxlength="80" aria-describedby="err-title">
+          <p class="field-error" id="err-title"></p>
+        </div>
+        <div class="form-field full" data-field="description">
+          <label for="t-description">Description</label>
+          <textarea id="t-description" name="description" rows="3" maxlength="500" aria-describedby="err-description count-description"></textarea>
+          <span class="counter" id="count-description">0 / 500</span>
+          <p class="field-error" id="err-description"></p>
+        </div>
+        <div class="form-field" data-field="project">
+          <label for="t-project">Project / Workstream</label>
+          <select id="t-project" name="project"></select>
+        </div>
+        <div class="form-field" data-field="category">
+          <label for="t-category">Category</label>
+          <select id="t-category" name="category"></select>
+        </div>
+        <div class="form-field" data-field="assignee">
+          <label for="t-assignee">Assignee <span class="req" aria-hidden="true">*</span></label>
+          <input type="text" id="t-assignee" name="assignee" maxlength="50" aria-describedby="err-assignee">
+          <p class="field-error" id="err-assignee"></p>
+        </div>
+        <div class="form-field" data-field="priority">
+          <label for="t-priority">Priority</label>
+          <select id="t-priority" name="priority"></select>
+        </div>
+        <div class="form-field" data-field="dueDate">
+          <label for="t-due">Due Date <span class="req" aria-hidden="true">*</span></label>
+          <input type="date" id="t-due" name="dueDate" aria-describedby="err-dueDate">
+          <p class="field-error" id="err-dueDate"></p>
+        </div>
+        <div class="form-field" data-field="status">
+          <label for="t-status">Status</label>
+          <select id="t-status" name="status"></select>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button type="button" class="btn btn-secondary" id="cancel-add">Cancel</button>
+        <button type="submit" class="btn btn-submit" id="submit-btn">Add Task</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="toast-region" id="toast-region" aria-live="polite" aria-atomic="false"></div>
+<div class="confetti" id="confetti" aria-hidden="true"></div>
+
+<!--
+  FORMSUBMIT ACTIVATION (one-time): FormSubmit requires activation per address.
+  The FIRST submission to a new email address triggers a confirmation email sent to that
+  address; submissions are only delivered after the activation link is clicked. Until then the
+  app shows the "email notification failed" warning (the card is still kept).
+-->
+<script src="app.js" defer></script>
+</body>
+</html>

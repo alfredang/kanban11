@@ -19,6 +19,16 @@ jobs:
         run: |
           sed -n '/^<script>/,/^<\/script>/p' index.html | sed '1d;$d' > "$RUNNER_TEMP/k.js"
           node --check "$RUNNER_TEMP/k.js"
+      - name: Syntax-check v2 script
+        run: node --check v2/app.js
+      - name: v2 hardening lint
+        run: |
+          ! grep -n 'innerHTML\|outerHTML\|insertAdjacentHTML\|document.write\|eval(\|new Function' v2/app.js
+          ! grep -n '!important' v2/styles.css
+          ! grep -nE 'localStorage|sessionStorage|indexedDB|document.cookie' v2/app.js
+          ! grep -nE '<script>|<style|style=|onclick=' v2/index.html
+          grep -q "script-src 'self'" v2/index.html
+          grep -q "style-src 'self'" v2/index.html
   deploy:
     needs: check
     runs-on: ubuntu-latest
@@ -31,7 +41,7 @@ jobs:
         with:
           enablement: true
       - name: Stage site
-        run: mkdir _site && cp index.html _site/
+        run: mkdir -p _site/v2 && cp index.html _site/ && cp v2/index.html v2/app.js v2/styles.css _site/v2/
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site

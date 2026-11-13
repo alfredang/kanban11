@@ -1,6 +1,7 @@
 # kanban11 — IT PMO Project Kanban (Demo)
 
-**Live demo:** https://alfredang.github.io/kanban11/
+**Live demo (v2, cartoon revamp):** https://alfredang.github.io/kanban11/v2/
+**Original v1:** https://alfredang.github.io/kanban11/
 
 A single-file Kanban board demo for an IT PMO, built with vanilla HTML/CSS/JS. All markup, styles and script live in `index.html`.
 
@@ -29,3 +30,13 @@ There is no test suite. Syntax check of the script block:
 ```bash
 sed -n '/^<script>/,/^<\/script>/p' index.html | sed '1d;$d' > "$TEMP/k.js" && node --check "$TEMP/k.js"
 ```
+
+## v2 (cartoon revamp, `v2/`)
+- **Look:** thick-outline "sticker" cartoon style, bouncy card/tab/chart animations, confetti when a task reaches Done, animated mascot. All motion is wrapped in `prefers-reduced-motion: no-preference`.
+- **Three tabs** (arrow-key navigable, deep-linkable via `#board`, `#visual`, `#timeline`): **Board** (drag-and-drop Kanban), **Visual** (KPIs, status donut, priority bars, per-project stacked bars, overdue rescue list), **Timeline** (Gantt-style start-to-due bars with a Today marker). The filters apply to all three.
+- **Hardening:**
+  - Strict CSP (`script-src 'self'`, `style-src 'self'`, `connect-src https://formsubmit.co`, `form-action 'none'`, `base-uri 'none'`, `object-src 'none'`), enabled by splitting the app into `index.html` / `styles.css` / `app.js` (no inline code).
+  - No `innerHTML`: the DOM is built with `createElement`/`textContent`, so user text is never parsed as HTML.
+  - Input sanitising (control and bidi characters stripped, length caps), whitelist validation of every enum and id, date validation, task cap, submit cooldown, ignoring foreign drag data, spreadsheet-formula neutralising in the notification email, `credentials: omit`, `redirect: error`, `no-referrer`, frame-busting, and `inert` background while the modal is open.
+  - CI lints `v2/` for `innerHTML`, `eval`, `!important`, storage APIs and inline code.
+  - Limits: GitHub Pages cannot send HTTP headers, so `frame-ancestors`/HSTS cannot be set (frame-busting JS is used instead).
