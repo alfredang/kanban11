@@ -11,7 +11,16 @@ concurrency:
   group: pages
   cancel-in-progress: false
 jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Syntax-check script block
+        run: |
+          sed -n '/^<script>/,/^<\/script>/p' index.html | sed '1d;$d' > "$RUNNER_TEMP/k.js"
+          node --check "$RUNNER_TEMP/k.js"
   deploy:
+    needs: check
     runs-on: ubuntu-latest
     environment:
       name: github-pages

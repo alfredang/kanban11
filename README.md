@@ -14,7 +14,7 @@ Open `index.html` in a browser (`Start-Process index.html` on Windows). No serve
 Set your notification address in **one place only**: `FORMSUBMIT_ENDPOINT` in the config section at the top of the `<script>`. FormSubmit requires a one-time email activation per address (see the HTML comment above the script); until activated, new-task notifications are not delivered (the board still works, a warning toast is shown).
 
 ## Deployment
-GitHub Actions (`.github/workflows/pages.yml`) deploys the repo root to GitHub Pages on every push to `main`.
+GitHub Actions (`.github/workflows/pages.yml`) deploys the repo root to GitHub Pages on every push to `main`. A `check` job runs `node --check` on the extracted script block first; `deploy` only runs if it passes.
 
 ## Conventions
 - Vanilla only: no frameworks, CDNs, web fonts or image assets.

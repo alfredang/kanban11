@@ -6,3 +6,10 @@
 *.p12
 id_rsa*
 .playwright-mcp/
+
+node_modules/
+.claude/settings.local.json
+.vscode/
+Thumbs.db
+.DS_Store
+*.log
